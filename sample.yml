@@ -1,0 +1,22 @@
+# root folder form where all configurations will have relative path for input
+# can be ommited. default is the folder where the conf file is. Also if the value is a relative path, it is relative to the conf file
+inRoot: ./
+
+# root folder form where all configurations will have relative path for output
+# can be ommited. default is the folder where the conf file is. Also if the value is a relative path, it is relative to the conf file
+outRoot: ./
+
+# when "in " is defined, then it is considered as start of new definition
+rules:
+  - in: src/test/folder1
+    out: /tmp/folder1-copy
+    recursive: true
+    includes: [ "**.xml" ]
+
+ssh:
+  username: root
+  password: LdjiKE4SMOWaa51
+  host: 136.243.90.99
+  port: 22
+ 
+ 
