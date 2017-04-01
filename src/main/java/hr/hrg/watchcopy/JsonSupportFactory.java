@@ -1,5 +1,7 @@
 package hr.hrg.watchcopy;
 
+import hr.hrg.javawatcher.WatchUtil;
+
 public class JsonSupportFactory {
 
 	public JsonSupport create(boolean lenient){
@@ -12,21 +14,11 @@ public class JsonSupportFactory {
 	}
 
 	public static final boolean gsonAvailable() {
-		return classAvailable("com.google.gson.Gson");
+		return WatchUtil.classAvailable("com.google.gson.Gson");
 	}
 
 	public static final boolean jacksonAvailable() {
-		return classAvailable("com.fasterxml.jackson.databind.ObjectMapper");
-	}
-
-	public static final boolean classAvailable(String name){
-		try {
-			Class.forName(name);
-			return true;
-		} catch (ClassNotFoundException e) {
-			// ignore
-		}
-		return false;
+		return WatchUtil.classAvailable("com.fasterxml.jackson.databind.ObjectMapper");
 	}
 
 }
