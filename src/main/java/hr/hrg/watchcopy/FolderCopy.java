@@ -27,7 +27,11 @@ import com.pastdev.jsch.DefaultSessionFactory;
 
 import hr.hrg.javawatcher.FileChangeEntry;
 import hr.hrg.javawatcher.FileMatchGlob;
+import hr.hrg.javawatcher.FileMatcher;
 import hr.hrg.javawatcher.FolderWatcher;
+import hr.hrg.javawatcher.FolderWatcherOld;
+import hr.hrg.javawatcher.IFolderWatcher;
+import hr.hrg.javawatcher.Main;
 
 /**
  * 
@@ -159,7 +163,7 @@ public class FolderCopy {
 		List<MyFileMatch> tasks = new ArrayList<>();
 		for(MatchConf mc: conf.rules){
 			MyFileMatch match = new MyFileMatch(inRoot.resolve(mc.in), mc.recursive);
-			match.setOut(outRoot.resolve(mc.out));
+			match.getContext().setOut(outRoot.resolve(mc.out));
 			match.excludes(mc.excludes);
 			match.includes(mc.includes);
 			tasks.add(match);
@@ -170,21 +174,21 @@ public class FolderCopy {
 	}
 
 	private void start(Path outRoot, List<MyFileMatch> tasks, long burstDelay) throws IOException {
-		FolderWatcher<MyFileMatch> watcher = new FolderWatcher<>();
+		IFolderWatcher<MyContext> watcher = Main.makeWatcher();
 		for(MyFileMatch m:tasks){
 			watcher.add(m);
 		}
 		watcher.init(true);
 		
-		for(MyFileMatch loopMatch:watcher.getMatchers()){
+		for(FileMatcher<MyContext> loopMatch:watcher.getMatchers()){
 			Path root = loopMatch.getRootPath();
 			for(Path path: loopMatch.getMatched()){
-				copyFile(path, loopMatch.getOut().resolve(root.relativize(path)));
+				copyFile(path, loopMatch.getContext().getOut().resolve(root.relativize(path)));
 			}
 		}
 
 
-		Collection<FileChangeEntry<MyFileMatch>> changedFiles = null;
+		Collection<FileChangeEntry<MyContext>> changedFiles = null;
 
 		while(!Thread.interrupted()){			
 			
@@ -192,10 +196,10 @@ public class FolderCopy {
 			if(changedFiles == null ) break; // interrupted
 			
 			// make sure we have unique values
-			HashSet<FileChangeEntry<MyFileMatch>> todo = new HashSet<>(changedFiles);
+			HashSet<FileChangeEntry<MyContext>> todo = new HashSet<>(changedFiles);
 			
-			for(FileChangeEntry<MyFileMatch> e: todo){
-				copyFile(e.getPath(), e.getMatcher().getOut().resolve(e.getMatcher().getRootPath().relativize(e.getPath())));
+			for(FileChangeEntry<MyContext> e: todo){
+				copyFile(e.getPath(), e.getMatcher().getContext().getOut().resolve(e.getMatcher().getRootPath().relativize(e.getPath())));
 			}
 		}		
 		
@@ -250,13 +254,16 @@ public class FolderCopy {
 		System.out.println("");
 	}
 	
-	static class MyFileMatch extends FileMatchGlob{
+	static class MyFileMatch extends FileMatchGlob<MyContext>{
+		public MyFileMatch(Path root, boolean recursive) {
+			super(root, new MyContext(), recursive);
+		}		
+	}
+
+	static class MyContext{
+		
 		Path out;
 		boolean overwrite = true;
-
-		public MyFileMatch(Path root, boolean recursive) {
-			super(root, recursive);
-		}
 		
 		public void setOut(Path out) {
 			this.out = out;
@@ -264,10 +271,6 @@ public class FolderCopy {
 		
 		public Path getOut() {
 			return out;
-		}
-		
-		public void setRecursive(boolean r){
-			this.recursive = r;
 		}
 		
 		public void setOverwrite(boolean overwrite) {
